@@ -16,7 +16,7 @@ export default function PrepGuidePage() {
   return (
     <section className="space-y-4 rounded-2xl border bg-white p-6">
       <h1 className="text-3xl font-semibold">Weekly prep guide</h1>
-      <p className="text-sm text-zinc-600">Estimated prep time: 75 minutes. Mark tasks complete for persistent checklist behavior.</p>
+      <p className="text-sm text-zinc-600">Estimated prep time: 75 minutes. Mark tasks complete for local checklist behavior for this session.</p>
       <ul className="space-y-2">
         {initialTasks.map((task) => (
           <li key={task} className="rounded border p-3">

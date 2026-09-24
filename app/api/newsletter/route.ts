@@ -3,11 +3,19 @@ import { prisma } from "@/lib/prisma";
 import { allowRequest } from "@/lib/rate-limit";
 import { newsletterSchema } from "@/lib/validation";
 
+function getClientKey(req: Request) {
+  return req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+}
+
 export async function POST(req: Request) {
-  const body = await req.json();
+  const contentType = req.headers.get("content-type") ?? "";
+  const body = contentType.includes("application/json")
+    ? await req.json()
+    : { email: (await req.formData()).get("email") };
+
   const parsed = newsletterSchema.safeParse(body);
   if (!parsed.success) return NextResponse.json({ error: "Invalid email" }, { status: 400 });
-  if (!allowRequest(`newsletter:${parsed.data.email}`, 8, 60_000)) return NextResponse.json({ error: "Rate limited" }, { status: 429 });
+  if (!allowRequest(`newsletter:${getClientKey(req)}`, 8, 60_000)) return NextResponse.json({ error: "Rate limited" }, { status: 429 });
 
   const created = await prisma.newsletterSubscriber.upsert({
     where: { email: parsed.data.email.toLowerCase() },

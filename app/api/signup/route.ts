@@ -5,12 +5,16 @@ import { prisma } from "@/lib/prisma";
 import { allowRequest } from "@/lib/rate-limit";
 import { signupSchema } from "@/lib/validation";
 
+function getClientKey(req: Request) {
+  return req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+}
+
 export async function POST(req: Request) {
   const body = await req.json();
   const parsed = signupSchema.safeParse(body);
   if (!parsed.success) return NextResponse.json({ error: "Invalid input" }, { status: 400 });
 
-  if (!allowRequest(`signup:${parsed.data.email}`, 5, 60_000)) {
+  if (!allowRequest(`signup:${getClientKey(req)}`, 5, 60_000)) {
     return NextResponse.json({ error: "Too many signup attempts" }, { status: 429 });
   }
 

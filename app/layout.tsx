@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import type { ReactNode } from "react";
 import "./globals.css";
 import { Nav } from "@/components/nav";
 
@@ -7,7 +8,7 @@ export const metadata: Metadata = {
   description: "Original weekly meal planning app",
 };
 
-export default async function RootLayout({ children }: LayoutProps<"/">) {
+export default async function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en" className="h-full">
       <body className="min-h-full bg-amber-50 font-sans text-zinc-900">

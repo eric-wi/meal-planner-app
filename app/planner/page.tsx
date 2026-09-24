@@ -23,7 +23,22 @@ export default async function PlannerPage() {
       },
       take: 60,
     }),
-    prisma.mealPlan.findFirst({ where: { userId: session.user.id, status: "ACTIVE" }, include: { entries: { include: { recipe: true }, orderBy: { orderIndex: "asc" } } }, orderBy: { updatedAt: "desc" } }),
+    prisma.mealPlan.findFirst({
+      where: { userId: session.user.id, status: "ACTIVE" },
+      include: {
+        entries: {
+          select: {
+            recipeId: true,
+            dayOfWeek: true,
+            mealType: true,
+            orderIndex: true,
+            recipe: { select: { title: true } },
+          },
+          orderBy: { orderIndex: "asc" },
+        },
+      },
+      orderBy: { updatedAt: "desc" },
+    }),
   ]);
 
   const pref = user?.preferences;

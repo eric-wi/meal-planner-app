@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import { AuthControls } from "@/components/auth-controls";
 
 export async function Nav() {
   const session = await getServerSession(authOptions);
@@ -18,7 +19,7 @@ export async function Nav() {
           {session?.user ? (
             <>
               <Link href="/dashboard" className="hover:underline">Dashboard</Link>
-              <form action="/api/auth/signout" method="post"><button className="rounded bg-amber-700 px-3 py-1.5 text-white">Sign out</button></form>
+              <AuthControls />
             </>
           ) : (
             <Link href="/signin" className="rounded bg-amber-700 px-3 py-1.5 text-white">Sign in</Link>

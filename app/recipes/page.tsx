@@ -14,7 +14,15 @@ export default async function RecipesPage({ searchParams }: { searchParams: Para
     where: {
       status: RecipeStatus.PUBLISHED,
       ...(params.mealType ? { mealType: params.mealType } : {}),
-      ...(params.q ? { OR: [{ title: { contains: params.q, mode: "insensitive" } }, { summary: { contains: params.q, mode: "insensitive" } }] } : {}),
+      ...(params.q
+        ? {
+            OR: [
+              { title: { contains: params.q, mode: "insensitive" } },
+              { summary: { contains: params.q, mode: "insensitive" } },
+              { ingredients: { some: { ingredient: { name: { contains: params.q, mode: "insensitive" } } } } },
+            ],
+          }
+        : {}),
     },
     include: { dietaryTags: { include: { dietaryTag: true } }, allergyTags: { include: { allergyTag: true } } },
     skip: (page - 1) * 12,
@@ -43,7 +51,7 @@ export default async function RecipesPage({ searchParams }: { searchParams: Para
             <p className="text-sm text-zinc-600">{recipe.totalMinutes} min · {recipe.cuisine}</p>
             <p className="mt-1 text-xs text-zinc-500">Dietary: {recipe.dietaryTags.map((t) => t.dietaryTag.label).join(", ") || "none"}</p>
             <p className="mt-1 text-xs text-zinc-500">Allergens: {recipe.allergyTags.map((t) => t.allergyTag.label).join(", ") || "none"}</p>
-            <Link href={`/recipes/${recipe.id}`} className="mt-3 inline-block rounded bg-amber-700 px-3 py-1.5 text-sm text-white">View recipe</Link>
+            <Link href={`/recipes/${recipe.slug}`} className="mt-3 inline-block rounded bg-amber-700 px-3 py-1.5 text-sm text-white">View recipe</Link>
           </article>
         ))}
       </div>

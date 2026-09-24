@@ -1,3 +1,4 @@
+import { Prisma } from "@prisma/client";
 import { getServerSession } from "next-auth";
 import { NextResponse } from "next/server";
 import sanitizeHtml from "sanitize-html";
@@ -29,22 +30,29 @@ export async function POST(req: Request) {
   const parsed = adminRecipeSchema.safeParse(body);
   if (!parsed.success) return NextResponse.json({ error: "Invalid recipe" }, { status: 400 });
 
-  const recipe = await prisma.recipe.create({
-    data: {
-      ...parsed.data,
-      summary: sanitizeHtml(parsed.data.summary, { allowedTags: [], allowedAttributes: {} }),
-      imageUrl: "https://picsum.photos/seed/admin-recipe/800/600",
-      prepMinutes: 10,
-      cookMinutes: 20,
-      totalMinutes: 30,
-      servings: 4,
-      difficulty: "EASY",
-      nutritionCalories: 400,
-      nutritionProteinG: 20,
-      nutritionCarbsG: 30,
-      nutritionFatG: 15,
-    },
-  });
+  try {
+    const recipe = await prisma.recipe.create({
+      data: {
+        ...parsed.data,
+        summary: sanitizeHtml(parsed.data.summary, { allowedTags: [], allowedAttributes: {} }),
+        imageUrl: "https://picsum.photos/seed/admin-recipe/800/600",
+        prepMinutes: 10,
+        cookMinutes: 20,
+        totalMinutes: 30,
+        servings: 4,
+        difficulty: "EASY",
+        nutritionCalories: 400,
+        nutritionProteinG: 20,
+        nutritionCarbsG: 30,
+        nutritionFatG: 15,
+      },
+    });
 
-  return NextResponse.json(recipe);
+    return NextResponse.json(recipe);
+  } catch (error) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
+      return NextResponse.json({ error: "Recipe slug already exists" }, { status: 409 });
+    }
+    return NextResponse.json({ error: "Unable to create recipe" }, { status: 500 });
+  }
 }

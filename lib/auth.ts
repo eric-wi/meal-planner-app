@@ -1,7 +1,21 @@
 import bcrypt from "bcryptjs";
-import type { NextAuthOptions } from "next-auth";
+import type { NextAuthOptions, Session } from "next-auth";
+import type { JWT } from "next-auth/jwt";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { prisma } from "@/lib/prisma";
+
+export function mergeRoleIntoToken(token: JWT, user?: { role?: string } | null): JWT {
+  if (user?.role) token.role = user.role;
+  return token;
+}
+
+export function mergeRoleIntoSession(session: Session, token: JWT): Session {
+  if (session.user) {
+    session.user.id = token.sub ?? session.user.id ?? "";
+    session.user.role = token.role ?? "USER";
+  }
+  return session;
+}
 
 export const authOptions: NextAuthOptions = {
   session: { strategy: "jwt" },
@@ -27,15 +41,10 @@ export const authOptions: NextAuthOptions = {
   ],
   callbacks: {
     async jwt({ token, user }) {
-      if (user && "role" in user) token.role = String((user as { role?: string }).role ?? "USER");
-      return token;
+      return mergeRoleIntoToken(token, user as { role?: string } | null);
     },
     async session({ session, token }) {
-      if (session.user) {
-        session.user.id = token.sub as string;
-        session.user.role = (token.role as string | undefined) ?? "USER";
-      }
-      return session;
+      return mergeRoleIntoSession(session, token);
     },
   },
   pages: { signIn: "/signin" },

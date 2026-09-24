@@ -45,7 +45,7 @@ Hearthbyte Meals is an original meal-planning web app built with Next.js App Rou
 ### Public
 - `/` landing
 - `/recipes`
-- `/recipes/[id]`
+- `/recipes/[slug]`
 - `/signin`
 - `/signup`
 - `/reset-password`

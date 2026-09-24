@@ -23,6 +23,15 @@ const recipes = [
     allergyTags: ["nuts"],
     ingredients: [{ name: "peanuts", quantity: 1, unit: "cup", category: "PANTRY" }],
   },
+  {
+    id: "c",
+    title: "Quick Couscous",
+    cuisine: "Mediterranean",
+    totalMinutes: 15,
+    dietaryTags: ["nut-free", "vegetarian"],
+    allergyTags: [],
+    ingredients: [{ name: "couscous", quantity: 1, unit: "cup", category: "PANTRY" }],
+  },
 ];
 
 describe("planner filtering", () => {
@@ -35,8 +44,7 @@ describe("planner filtering", () => {
       dislikedIngredients: [],
       recentRecipeIds: [],
     });
-    expect(result).toHaveLength(1);
-    expect(result[0].id).toBe("a");
+    expect(result.map((recipe) => recipe.id)).toEqual(["a", "c"]);
   });
 
   it("respects dietary and time filters", () => {
@@ -48,7 +56,7 @@ describe("planner filtering", () => {
       dislikedIngredients: [],
       recentRecipeIds: [],
     });
-    expect(result.map((recipe) => recipe.id)).toEqual(["a"]);
+    expect(result.map((recipe) => recipe.id)).toEqual(["a", "c"]);
   });
 
   it("consolidates and scales grocery items", () => {
@@ -57,16 +65,17 @@ describe("planner filtering", () => {
     expect(result.find((item) => item.name === "spinach")?.quantity).toBe(6);
   });
 
-  it("returns personalized weekly suggestions", () => {
+  it("ranks suggestions and penalizes recent repeats", () => {
     const result = suggestWeeklyDinnerPlan(recipes, {
       allergies: [],
       dietaryPreferences: [],
       favoriteCuisines: ["Mediterranean"],
       preferredCookingTime: 30,
       dislikedIngredients: [],
-      recentRecipeIds: ["b"],
+      recentRecipeIds: ["c"],
     });
 
     expect(result[0].id).toBe("a");
+    expect(result.some((recipe) => recipe.id === "c")).toBe(true);
   });
 });

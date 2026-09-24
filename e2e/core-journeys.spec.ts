@@ -12,6 +12,12 @@ test("signup renders required inputs", async ({ page }) => {
   await expect(page.getByLabel("Email")).toBeVisible();
 });
 
+test("signin route renders credentials form", async ({ page }) => {
+  await page.goto("/signin");
+  await expect(page.getByRole("heading", { name: "Sign in" })).toBeVisible();
+  await expect(page.getByLabel("Password")).toBeVisible();
+});
+
 test("planner route redirects unauthenticated users", async ({ page }) => {
   await page.goto("/planner");
   await expect(page).toHaveURL(/signin/);

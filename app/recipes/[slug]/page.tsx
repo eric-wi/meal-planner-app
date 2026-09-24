@@ -1,12 +1,13 @@
+import { RecipeStatus } from "@prisma/client";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
-export default async function RecipeDetailPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params;
-  const recipe = await prisma.recipe.findUnique({
-    where: { id },
+export default async function RecipeDetailPage({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params;
+  const recipe = await prisma.recipe.findFirst({
+    where: { slug, status: RecipeStatus.PUBLISHED },
     include: {
       ingredients: { include: { ingredient: true } },
       steps: { orderBy: { order: "asc" } },
