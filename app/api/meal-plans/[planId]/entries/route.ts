@@ -1,4 +1,4 @@
-import { MealType, RecipeStatus } from "@prisma/client";
+import { MealType, Prisma, RecipeStatus } from "@prisma/client";
 import { getServerSession } from "next-auth";
 import { NextResponse } from "next/server";
 import { z } from "zod";
@@ -27,6 +27,18 @@ const mutationSchema = z.discriminatedUnion("action", [
     targetDay: z.number().int().min(1).max(7),
   }),
 ]);
+
+async function swapEntryDays(tx: Prisma.TransactionClient, sourceId: string, targetId: string, sourceDay: number, targetDay: number) {
+  await tx.$executeRaw`
+    UPDATE "MealPlanEntry"
+    SET "dayOfWeek" = CASE
+      WHEN "id" = ${sourceId} THEN ${targetDay}
+      WHEN "id" = ${targetId} THEN ${sourceDay}
+      ELSE "dayOfWeek"
+    END
+    WHERE "id" IN (${sourceId}, ${targetId})
+  `;
+}
 
 export async function PATCH(req: Request, { params }: { params: Promise<{ planId: string }> }) {
   const session = await getServerSession(authOptions);
@@ -62,14 +74,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ planId
         });
 
         if (target) {
-          await tx.mealPlanEntry.update({
-            where: { id: target.id },
-            data: { recipeId: entry.recipeId, servings: entry.servings, orderIndex: entry.orderIndex },
-          });
-          await tx.mealPlanEntry.update({
-            where: { id: entry.id },
-            data: { recipeId: target.recipeId, servings: target.servings, orderIndex: target.orderIndex },
-          });
+          await swapEntryDays(tx, entry.id, target.id, entry.dayOfWeek, targetDay);
           return;
         }
         await tx.mealPlanEntry.update({ where: { id: entry.id }, data: { dayOfWeek: targetDay } });
@@ -126,14 +131,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ planId
       });
 
       if (targetEntry) {
-        await tx.mealPlanEntry.update({
-          where: { id: targetEntry.id },
-          data: { recipeId: sourceEntry.recipeId, servings: sourceEntry.servings, orderIndex: sourceEntry.orderIndex },
-        });
-        await tx.mealPlanEntry.update({
-          where: { id: sourceEntry.id },
-          data: { recipeId: targetEntry.recipeId, servings: targetEntry.servings, orderIndex: targetEntry.orderIndex },
-        });
+        await swapEntryDays(tx, sourceEntry.id, targetEntry.id, action.sourceDay, action.targetDay);
         return;
       }
       await tx.mealPlanEntry.update({ where: { id: sourceEntry.id }, data: { dayOfWeek: action.targetDay } });

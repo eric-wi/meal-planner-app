@@ -130,8 +130,6 @@ export function PlannerClient({
               <div
                 key={day}
                 className="rounded border p-3"
-                draggable={Boolean(dinner)}
-                onDragStart={() => setDragDay(dayOfWeek)}
                 onDragOver={(event) => event.preventDefault()}
                 onDrop={() => {
                   if (dragDay && dragDay !== dayOfWeek) {
@@ -140,7 +138,18 @@ export function PlannerClient({
                   setDragDay(null);
                 }}
               >
-                <h3 className="font-semibold">{day}</h3>
+                <div className="flex items-center justify-between gap-2">
+                  <h3 className="font-semibold">{day}</h3>
+                  <button
+                    type="button"
+                    className="rounded border px-2 py-1 text-[10px] uppercase tracking-wide text-zinc-600 disabled:opacity-50"
+                    draggable={Boolean(dinner)}
+                    disabled={!dinner}
+                    onDragStart={() => setDragDay(dayOfWeek)}
+                  >
+                    Drag dinner
+                  </button>
+                </div>
                 <ul className="mt-2 space-y-2 text-sm">
                   <li><strong>Breakfast:</strong> {breakfast?.recipe.title ?? "-"}</li>
                   <li><strong>Lunch:</strong> {lunch?.recipe.title ?? "-"}</li>
