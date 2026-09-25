@@ -121,32 +121,22 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ planId
       }
 
       if (action.sourceDay === action.targetDay) return;
-      const sourceEntries = await tx.mealPlanEntry.findMany({
+      const sourceCount = await tx.mealPlanEntry.count({
         where: { mealPlanId: planId, mealType: action.mealType, dayOfWeek: action.sourceDay },
-        select: { id: true },
       });
-      if (sourceEntries.length === 0) throw new Error("ENTRY_NOT_FOUND");
-      const targetEntry = await tx.mealPlanEntry.findFirst({
-        where: { mealPlanId: planId, mealType: action.mealType, dayOfWeek: action.targetDay },
-      });
+      if (sourceCount === 0) throw new Error("ENTRY_NOT_FOUND");
 
-      const targetEntries = targetEntry
-        ? await tx.mealPlanEntry.findMany({
-            where: { mealPlanId: planId, mealType: action.mealType, dayOfWeek: action.targetDay },
-            select: { id: true },
-          })
-        : [];
-
-      if (targetEntries.length > 0) {
-        await tx.mealPlanEntry.updateMany({
-          where: { id: { in: targetEntries.map((entry) => entry.id) } },
-          data: { dayOfWeek: action.sourceDay },
-        });
-      }
-      await tx.mealPlanEntry.updateMany({
-        where: { id: { in: sourceEntries.map((entry) => entry.id) } },
-        data: { dayOfWeek: action.targetDay },
-      });
+      await tx.$executeRaw`
+        UPDATE "MealPlanEntry"
+        SET "dayOfWeek" = CASE
+          WHEN "dayOfWeek" = ${action.sourceDay} THEN ${action.targetDay}
+          WHEN "dayOfWeek" = ${action.targetDay} THEN ${action.sourceDay}
+          ELSE "dayOfWeek"
+        END
+        WHERE "mealPlanId" = ${planId}
+          AND "mealType" = ${action.mealType}::"MealType"
+          AND "dayOfWeek" IN (${action.sourceDay}, ${action.targetDay})
+      `;
     });
   } catch (error) {
     if (error instanceof Error && error.message === "ENTRY_NOT_FOUND") {

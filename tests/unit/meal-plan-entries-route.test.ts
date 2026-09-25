@@ -23,7 +23,7 @@ function mockTransactionWith(client: unknown) {
   transactionMock.mockImplementation(async (callback) => callback(client));
 }
 
-describe("meal plan entries route swap mutation", () => {
+describe("meal plan entries route mutations", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.mocked(getServerSession).mockResolvedValue({ user: { id: "user-1" } } as never);
@@ -85,5 +85,89 @@ describe("meal plan entries route swap mutation", () => {
     expect(response.status).toBe(404);
     expect(body.error).toBe("Recipe not found");
     expect(tx.mealPlanEntry.update).not.toHaveBeenCalled();
+  });
+
+  it("moves entry down when target day is empty", async () => {
+    const tx = {
+      mealPlanEntry: {
+        findFirst: vi
+          .fn()
+          .mockResolvedValueOnce({ id: "entry-1", mealType: "DINNER", dayOfWeek: 1 })
+          .mockResolvedValueOnce(null),
+        update: vi.fn().mockResolvedValue({}),
+      },
+      recipe: { findFirst: vi.fn() },
+      $executeRaw: vi.fn(),
+    };
+    mockTransactionWith(tx);
+
+    const response = await PATCH(
+      new Request("http://localhost/api/meal-plans/plan-1/entries", {
+        method: "PATCH",
+        body: JSON.stringify({ action: "move", entryId: "entry-1", direction: "down" }),
+      }),
+      { params: Promise.resolve({ planId: "plan-1" }) }
+    );
+
+    expect(response.status).toBe(200);
+    expect(tx.mealPlanEntry.update).toHaveBeenCalledWith({ where: { id: "entry-1" }, data: { dayOfWeek: 2 } });
+  });
+
+  it("duplicates entry into the next open weekday", async () => {
+    const tx = {
+      mealPlanEntry: {
+        findFirst: vi.fn().mockResolvedValue({ id: "entry-1", mealType: "DINNER", recipeId: "recipe-1", orderIndex: 0, servings: 4 }),
+        findMany: vi.fn().mockResolvedValue([{ dayOfWeek: 1 }, { dayOfWeek: 2 }]),
+        create: vi.fn().mockResolvedValue({}),
+      },
+      recipe: { findFirst: vi.fn() },
+      $executeRaw: vi.fn(),
+    };
+    mockTransactionWith(tx);
+
+    const response = await PATCH(
+      new Request("http://localhost/api/meal-plans/plan-1/entries", {
+        method: "PATCH",
+        body: JSON.stringify({ action: "duplicate", entryId: "entry-1" }),
+      }),
+      { params: Promise.resolve({ planId: "plan-1" }) }
+    );
+
+    expect(response.status).toBe(200);
+    expect(tx.mealPlanEntry.create).toHaveBeenCalledWith({
+      data: {
+        mealPlanId: "plan-1",
+        recipeId: "recipe-1",
+        dayOfWeek: 3,
+        mealType: "DINNER",
+        orderIndex: 0,
+        servings: 4,
+      },
+    });
+  });
+
+  it("reorders days with a single atomic update", async () => {
+    const tx = {
+      mealPlanEntry: {
+        count: vi.fn().mockResolvedValue(1),
+      },
+      recipe: { findFirst: vi.fn() },
+      $executeRaw: vi.fn().mockResolvedValue(2),
+    };
+    mockTransactionWith(tx);
+
+    const response = await PATCH(
+      new Request("http://localhost/api/meal-plans/plan-1/entries", {
+        method: "PATCH",
+        body: JSON.stringify({ action: "reorderDays", mealType: "DINNER", sourceDay: 1, targetDay: 2 }),
+      }),
+      { params: Promise.resolve({ planId: "plan-1" }) }
+    );
+
+    expect(response.status).toBe(200);
+    expect(tx.mealPlanEntry.count).toHaveBeenCalledWith({
+      where: { mealPlanId: "plan-1", mealType: "DINNER", dayOfWeek: 1 },
+    });
+    expect(tx.$executeRaw).toHaveBeenCalledTimes(1);
   });
 });
