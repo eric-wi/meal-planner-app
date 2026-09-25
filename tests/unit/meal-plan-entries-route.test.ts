@@ -149,24 +149,27 @@ describe("meal plan entries route mutations", () => {
   it("reorders days with a single atomic update", async () => {
     const tx = {
       mealPlanEntry: {
-        count: vi.fn().mockResolvedValue(1),
+        findFirst: vi
+          .fn()
+          .mockResolvedValueOnce({ id: "entry-1", dayOfWeek: 1, mealType: "DINNER" })
+          .mockResolvedValueOnce({ id: "entry-2", dayOfWeek: 2, mealType: "DINNER" }),
       },
       recipe: { findFirst: vi.fn() },
-      $executeRaw: vi.fn().mockResolvedValue(2),
+      $executeRaw: vi.fn(),
     };
     mockTransactionWith(tx);
 
     const response = await PATCH(
       new Request("http://localhost/api/meal-plans/plan-1/entries", {
         method: "PATCH",
-        body: JSON.stringify({ action: "reorderDays", mealType: "DINNER", sourceDay: 1, targetDay: 2 }),
+        body: JSON.stringify({ action: "reorderDays", entryId: "entry-1", mealType: "DINNER", sourceDay: 1, targetDay: 2 }),
       }),
       { params: Promise.resolve({ planId: "plan-1" }) }
     );
 
     expect(response.status).toBe(200);
-    expect(tx.mealPlanEntry.count).toHaveBeenCalledWith({
-      where: { mealPlanId: "plan-1", mealType: "DINNER", dayOfWeek: 1 },
+    expect(tx.mealPlanEntry.findFirst).toHaveBeenCalledWith({
+      where: { id: "entry-1", mealPlanId: "plan-1", mealType: "DINNER", dayOfWeek: 1 },
     });
     expect(tx.$executeRaw).toHaveBeenCalledTimes(1);
   });

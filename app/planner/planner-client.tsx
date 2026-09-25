@@ -21,7 +21,7 @@ type MutationPayload =
   | { action: "move"; entryId: string; direction: "up" | "down" }
   | { action: "duplicate"; entryId: string }
   | { action: "swap"; entryId: string; recipeId: string }
-  | { action: "reorderDays"; mealType: MealType; sourceDay: number; targetDay: number };
+  | { action: "reorderDays"; entryId: string; mealType: MealType; sourceDay: number; targetDay: number };
 
 export function PlannerClient({
   weekdays,
@@ -136,7 +136,16 @@ export function PlannerClient({
                 onDragOver={(event) => event.preventDefault()}
                 onDrop={() => {
                   if (dragDay && dragDay !== dayOfWeek) {
-                    void mutate({ action: "reorderDays", mealType: "DINNER", sourceDay: dragDay, targetDay: dayOfWeek });
+                    const sourceDinner = sortedEntries.find((entry) => entry.mealType === "DINNER" && entry.dayOfWeek === dragDay);
+                    if (sourceDinner) {
+                      void mutate({
+                        action: "reorderDays",
+                        entryId: sourceDinner.id,
+                        mealType: "DINNER",
+                        sourceDay: dragDay,
+                        targetDay: dayOfWeek,
+                      });
+                    }
                   }
                   setDragDay(null);
                 }}

@@ -22,6 +22,7 @@ const mutationSchema = z.discriminatedUnion("action", [
   }),
   z.object({
     action: z.literal("reorderDays"),
+    entryId: z.string().min(1),
     mealType: z.nativeEnum(MealType),
     sourceDay: z.number().int().min(1).max(5),
     targetDay: z.number().int().min(1).max(5),
@@ -121,22 +122,20 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ planId
       }
 
       if (action.sourceDay === action.targetDay) return;
-      const sourceCount = await tx.mealPlanEntry.count({
-        where: { mealPlanId: planId, mealType: action.mealType, dayOfWeek: action.sourceDay },
+      const sourceEntry = await tx.mealPlanEntry.findFirst({
+        where: { id: action.entryId, mealPlanId: planId, mealType: action.mealType, dayOfWeek: action.sourceDay },
       });
-      if (sourceCount === 0) throw new Error("ENTRY_NOT_FOUND");
+      if (!sourceEntry) throw new Error("ENTRY_NOT_FOUND");
 
-      await tx.$executeRaw`
-        UPDATE "MealPlanEntry"
-        SET "dayOfWeek" = CASE
-          WHEN "dayOfWeek" = ${action.sourceDay} THEN ${action.targetDay}
-          WHEN "dayOfWeek" = ${action.targetDay} THEN ${action.sourceDay}
-          ELSE "dayOfWeek"
-        END
-        WHERE "mealPlanId" = ${planId}
-          AND "mealType" = ${action.mealType}::"MealType"
-          AND "dayOfWeek" IN (${action.sourceDay}, ${action.targetDay})
-      `;
+      const targetEntry = await tx.mealPlanEntry.findFirst({
+        where: { mealPlanId: planId, mealType: action.mealType, dayOfWeek: action.targetDay },
+      });
+
+      if (targetEntry) {
+        await swapEntryDays(tx, sourceEntry.id, targetEntry.id, action.sourceDay, action.targetDay);
+        return;
+      }
+      await tx.mealPlanEntry.update({ where: { id: sourceEntry.id }, data: { dayOfWeek: action.targetDay } });
     });
   } catch (error) {
     if (error instanceof Error && error.message === "ENTRY_NOT_FOUND") {

@@ -125,6 +125,7 @@ describe("PlannerClient export", () => {
     expect(url).toBe("/api/meal-plans/plan-1/entries");
     expect(JSON.parse(options.body)).toEqual({
       action: "reorderDays",
+      entryId: "entry-1",
       mealType: "DINNER",
       sourceDay: 1,
       targetDay: 2,
