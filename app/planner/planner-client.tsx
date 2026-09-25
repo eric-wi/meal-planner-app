@@ -134,8 +134,9 @@ export function PlannerClient({
                 onDragStart={() => setDragDay(dayOfWeek)}
                 onDragOver={(event) => event.preventDefault()}
                 onDrop={() => {
-                  if (!dragDay || dragDay === dayOfWeek) return;
-                  void mutate({ action: "reorderDays", mealType: "DINNER", sourceDay: dragDay, targetDay: dayOfWeek });
+                  if (dragDay && dragDay !== dayOfWeek) {
+                    void mutate({ action: "reorderDays", mealType: "DINNER", sourceDay: dragDay, targetDay: dayOfWeek });
+                  }
                   setDragDay(null);
                 }}
               >

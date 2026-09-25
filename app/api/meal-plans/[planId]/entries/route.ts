@@ -62,12 +62,17 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ planId
         });
 
         if (target) {
-          await tx.mealPlanEntry.update({ where: { id: target.id }, data: { dayOfWeek: 0 } });
+          await tx.mealPlanEntry.update({
+            where: { id: target.id },
+            data: { recipeId: entry.recipeId, servings: entry.servings, orderIndex: entry.orderIndex },
+          });
+          await tx.mealPlanEntry.update({
+            where: { id: entry.id },
+            data: { recipeId: target.recipeId, servings: target.servings, orderIndex: target.orderIndex },
+          });
+          return;
         }
         await tx.mealPlanEntry.update({ where: { id: entry.id }, data: { dayOfWeek: targetDay } });
-        if (target) {
-          await tx.mealPlanEntry.update({ where: { id: target.id }, data: { dayOfWeek: entry.dayOfWeek } });
-        }
         return;
       }
 
@@ -121,12 +126,17 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ planId
       });
 
       if (targetEntry) {
-        await tx.mealPlanEntry.update({ where: { id: targetEntry.id }, data: { dayOfWeek: 0 } });
+        await tx.mealPlanEntry.update({
+          where: { id: targetEntry.id },
+          data: { recipeId: sourceEntry.recipeId, servings: sourceEntry.servings, orderIndex: sourceEntry.orderIndex },
+        });
+        await tx.mealPlanEntry.update({
+          where: { id: sourceEntry.id },
+          data: { recipeId: targetEntry.recipeId, servings: targetEntry.servings, orderIndex: targetEntry.orderIndex },
+        });
+        return;
       }
       await tx.mealPlanEntry.update({ where: { id: sourceEntry.id }, data: { dayOfWeek: action.targetDay } });
-      if (targetEntry) {
-        await tx.mealPlanEntry.update({ where: { id: targetEntry.id }, data: { dayOfWeek: action.sourceDay } });
-      }
     });
   } catch (error) {
     if (error instanceof Error && error.message === "ENTRY_NOT_FOUND") {
