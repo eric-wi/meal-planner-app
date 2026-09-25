@@ -77,6 +77,7 @@ export default async function PlannerPage() {
 
   return (
     <PlannerClient
+      key={`${activePlan?.id ?? "none"}-${activePlan?.updatedAt?.toISOString?.() ?? "none"}`}
       weekdays={weekdays}
       planId={activePlan?.id ?? null}
       entries={activePlan?.entries ?? []}

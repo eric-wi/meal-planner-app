@@ -160,4 +160,60 @@ describe("PlannerClient export", () => {
     expect(screen.getByText("Create an active plan before editing.")).toBeTruthy();
     expect(fetchMock).not.toHaveBeenCalled();
   });
+
+  it("sends move, duplicate, and swap payloads from planner controls", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        entries: [
+          {
+            id: "entry-1",
+            recipeId: "recipe-1",
+            dayOfWeek: 1,
+            mealType: "DINNER",
+            orderIndex: 0,
+            servings: 4,
+            recipe: { title: "Chili" },
+          },
+        ],
+      }),
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(
+      <PlannerClient
+        weekdays={["Mon", "Tue", "Wed", "Thu", "Fri"]}
+        planId="plan-1"
+        entries={[
+          {
+            id: "entry-1",
+            recipeId: "recipe-1",
+            dayOfWeek: 1,
+            mealType: "DINNER",
+            orderIndex: 0,
+            servings: 4,
+            recipe: { title: "Chili" },
+          },
+        ]}
+        suggestions={[]}
+        groceries={[]}
+        recipeOptions={[
+          { id: "recipe-1", title: "Chili", cuisine: "Comfort", totalMinutes: 35 },
+          { id: "recipe-2", title: "Soup", cuisine: "Comfort", totalMinutes: 30 },
+        ]}
+      />
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Move down" }));
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
+    expect(JSON.parse(fetchMock.mock.calls[0][1].body)).toEqual({ action: "move", entryId: "entry-1", direction: "down" });
+
+    fireEvent.click(screen.getByRole("button", { name: "Duplicate" }));
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
+    expect(JSON.parse(fetchMock.mock.calls[1][1].body)).toEqual({ action: "duplicate", entryId: "entry-1" });
+
+    fireEvent.change(screen.getByLabelText("Swap dinner recipe"), { target: { value: "recipe-2" } });
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(3));
+    expect(JSON.parse(fetchMock.mock.calls[2][1].body)).toEqual({ action: "swap", entryId: "entry-1", recipeId: "recipe-2" });
+  });
 });
