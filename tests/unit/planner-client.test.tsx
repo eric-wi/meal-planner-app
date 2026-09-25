@@ -1,6 +1,6 @@
 /* @vitest-environment jsdom */
 
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { PlannerClient } from "@/app/planner/planner-client";
 
@@ -60,5 +60,74 @@ describe("PlannerClient export", () => {
 
     vi.runAllTimers();
     expect(revokeObjectURL).toHaveBeenCalledWith("blob:planner-export");
+  });
+
+  it("sends reorder mutation payload on dinner drag and drop", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        entries: [
+          {
+            id: "entry-1",
+            recipeId: "recipe-1",
+            dayOfWeek: 2,
+            mealType: "DINNER",
+            orderIndex: 0,
+            servings: 4,
+            recipe: { title: "Chili" },
+          },
+        ],
+      }),
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(
+      <PlannerClient
+        weekdays={["Mon", "Tue", "Wed", "Thu", "Fri"]}
+        planId="plan-1"
+        entries={[
+          {
+            id: "entry-1",
+            recipeId: "recipe-1",
+            dayOfWeek: 1,
+            mealType: "DINNER",
+            orderIndex: 0,
+            servings: 4,
+            recipe: { title: "Chili" },
+          },
+          {
+            id: "entry-2",
+            recipeId: "recipe-2",
+            dayOfWeek: 2,
+            mealType: "DINNER",
+            orderIndex: 0,
+            servings: 4,
+            recipe: { title: "Soup" },
+          },
+        ]}
+        suggestions={[]}
+        groceries={[]}
+        recipeOptions={[
+          { id: "recipe-1", title: "Chili", cuisine: "Comfort", totalMinutes: 35 },
+          { id: "recipe-2", title: "Soup", cuisine: "Comfort", totalMinutes: 30 },
+        ]}
+      />
+    );
+
+    fireEvent.dragStart(screen.getByTestId("planner-drag-1"));
+    fireEvent.dragOver(screen.getByTestId("planner-day-2"));
+    fireEvent.drop(screen.getByTestId("planner-day-2"));
+
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+    });
+    const [url, options] = fetchMock.mock.calls[0] as [string, { body: string }];
+    expect(url).toBe("/api/meal-plans/plan-1/entries");
+    expect(JSON.parse(options.body)).toEqual({
+      action: "reorderDays",
+      mealType: "DINNER",
+      sourceDay: 1,
+      targetDay: 2,
+    });
   });
 });

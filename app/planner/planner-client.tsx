@@ -129,6 +129,7 @@ export function PlannerClient({
             return (
               <div
                 key={day}
+                data-testid={`planner-day-${dayOfWeek}`}
                 className="rounded border p-3"
                 onDragOver={(event) => event.preventDefault()}
                 onDrop={() => {
@@ -142,6 +143,7 @@ export function PlannerClient({
                   <h3 className="font-semibold">{day}</h3>
                   <button
                     type="button"
+                    data-testid={`planner-drag-${dayOfWeek}`}
                     className="rounded border px-2 py-1 text-[10px] uppercase tracking-wide text-zinc-600 disabled:opacity-50"
                     draggable={Boolean(dinner)}
                     disabled={!dinner}
