@@ -23,8 +23,8 @@ const mutationSchema = z.discriminatedUnion("action", [
   z.object({
     action: z.literal("reorderDays"),
     mealType: z.nativeEnum(MealType),
-    sourceDay: z.number().int().min(1).max(7),
-    targetDay: z.number().int().min(1).max(7),
+    sourceDay: z.number().int().min(1).max(5),
+    targetDay: z.number().int().min(1).max(5),
   }),
 ]);
 
@@ -67,7 +67,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ planId
         });
         if (!entry) throw new Error("ENTRY_NOT_FOUND");
         const targetDay = entry.dayOfWeek + (action.direction === "up" ? -1 : 1);
-        if (targetDay < 1 || targetDay > 7) throw new Error("DAY_OUT_OF_RANGE");
+        if (targetDay < 1 || targetDay > 5) throw new Error("DAY_OUT_OF_RANGE");
 
         const target = await tx.mealPlanEntry.findFirst({
           where: { mealPlanId: planId, mealType: entry.mealType, dayOfWeek: targetDay },
@@ -88,11 +88,11 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ planId
         if (!entry) throw new Error("ENTRY_NOT_FOUND");
 
         const existing = await tx.mealPlanEntry.findMany({
-          where: { mealPlanId: planId, mealType: entry.mealType, dayOfWeek: { gte: 1, lte: 7 } },
+          where: { mealPlanId: planId, mealType: entry.mealType, dayOfWeek: { gte: 1, lte: 5 } },
           select: { dayOfWeek: true },
         });
         const occupied = new Set(existing.map((item) => item.dayOfWeek));
-        const targetDay = [1, 2, 3, 4, 5, 6, 7].find((day) => !occupied.has(day));
+        const targetDay = [1, 2, 3, 4, 5].find((day) => !occupied.has(day));
         if (!targetDay) throw new Error("NO_EMPTY_DAY");
 
         await tx.mealPlanEntry.create({

@@ -130,4 +130,34 @@ describe("PlannerClient export", () => {
       targetDay: 2,
     });
   });
+
+  it("shows status and skips fetch when no active plan is available", () => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(
+      <PlannerClient
+        weekdays={["Mon", "Tue", "Wed", "Thu", "Fri"]}
+        planId={null}
+        entries={[
+          {
+            id: "entry-1",
+            recipeId: "recipe-1",
+            dayOfWeek: 1,
+            mealType: "DINNER",
+            orderIndex: 0,
+            servings: 4,
+            recipe: { title: "Chili" },
+          },
+        ]}
+        suggestions={[]}
+        groceries={[]}
+        recipeOptions={[{ id: "recipe-1", title: "Chili", cuisine: "Comfort", totalMinutes: 35 }]}
+      />
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Move up" }));
+    expect(screen.getByText("Create an active plan before editing.")).toBeTruthy();
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
 });

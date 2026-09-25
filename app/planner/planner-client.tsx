@@ -102,7 +102,7 @@ export function PlannerClient({
     setTimeout(() => {
       link.remove();
       URL.revokeObjectURL(href);
-    }, 0);
+    }, 500);
   }
 
   return (
