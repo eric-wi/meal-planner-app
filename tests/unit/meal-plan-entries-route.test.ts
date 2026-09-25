@@ -88,6 +88,18 @@ describe("meal plan entries route mutations", () => {
   });
 
   it("moves entry down when target day is empty", async () => {
+    vi.mocked(prisma.mealPlanEntry.findMany).mockResolvedValue([
+      {
+        id: "entry-1",
+        recipeId: "recipe-1",
+        dayOfWeek: 2,
+        mealType: "DINNER",
+        orderIndex: 0,
+        servings: 4,
+        recipe: { title: "Chili" },
+      },
+    ] as never);
+
     const tx = {
       mealPlanEntry: {
         findFirst: vi
@@ -110,6 +122,8 @@ describe("meal plan entries route mutations", () => {
     );
 
     expect(response.status).toBe(200);
+    const body = (await response.json()) as { entries: Array<{ id: string }> };
+    expect(body.entries[0]?.id).toBe("entry-1");
     expect(tx.mealPlanEntry.update).toHaveBeenCalledWith({ where: { id: "entry-1" }, data: { dayOfWeek: 2 } });
   });
 
