@@ -120,11 +120,11 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ planId
         return;
       }
 
+      if (action.sourceDay === action.targetDay) return;
       const sourceEntry = await tx.mealPlanEntry.findFirst({
         where: { mealPlanId: planId, mealType: action.mealType, dayOfWeek: action.sourceDay },
       });
       if (!sourceEntry) throw new Error("ENTRY_NOT_FOUND");
-      if (action.sourceDay === action.targetDay) return;
 
       const targetEntry = await tx.mealPlanEntry.findFirst({
         where: { mealPlanId: planId, mealType: action.mealType, dayOfWeek: action.targetDay },
