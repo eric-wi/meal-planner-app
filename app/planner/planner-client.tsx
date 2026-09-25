@@ -48,12 +48,14 @@ export function PlannerClient({
     [entries]
   );
 
-  const dinnerByDay = useMemo(() => {
-    const map = new Map<number, PlannerEntry>();
+  const mealTypeOccupancy = useMemo(() => {
+    const byMealType = new Map<MealType, Set<number>>();
     for (const entry of sortedEntries) {
-      if (entry.mealType === "DINNER" && !map.has(entry.dayOfWeek)) map.set(entry.dayOfWeek, entry);
+      const occupied = byMealType.get(entry.mealType) ?? new Set<number>();
+      occupied.add(entry.dayOfWeek);
+      byMealType.set(entry.mealType, occupied);
     }
-    return map;
+    return byMealType;
   }, [sortedEntries]);
 
   const getEntry = (day: number, mealType: MealType) =>
@@ -194,7 +196,7 @@ export function PlannerClient({
                   </button>
                   <button
                     className="rounded border px-2 py-1 disabled:opacity-50"
-                    disabled={!dinner || pending || dinnerByDay.size >= weekdays.length}
+                    disabled={!dinner || pending || (mealTypeOccupancy.get(dinner.mealType)?.size ?? 0) >= weekdays.length}
                     onClick={() => dinner && void mutate({ action: "duplicate", entryId: dinner.id })}
                   >
                     Duplicate

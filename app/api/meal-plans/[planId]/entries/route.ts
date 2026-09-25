@@ -121,20 +121,32 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ planId
       }
 
       if (action.sourceDay === action.targetDay) return;
-      const sourceEntry = await tx.mealPlanEntry.findFirst({
+      const sourceEntries = await tx.mealPlanEntry.findMany({
         where: { mealPlanId: planId, mealType: action.mealType, dayOfWeek: action.sourceDay },
+        select: { id: true },
       });
-      if (!sourceEntry) throw new Error("ENTRY_NOT_FOUND");
-
+      if (sourceEntries.length === 0) throw new Error("ENTRY_NOT_FOUND");
       const targetEntry = await tx.mealPlanEntry.findFirst({
         where: { mealPlanId: planId, mealType: action.mealType, dayOfWeek: action.targetDay },
       });
 
-      if (targetEntry) {
-        await swapEntryDays(tx, sourceEntry.id, targetEntry.id, action.sourceDay, action.targetDay);
-        return;
+      const targetEntries = targetEntry
+        ? await tx.mealPlanEntry.findMany({
+            where: { mealPlanId: planId, mealType: action.mealType, dayOfWeek: action.targetDay },
+            select: { id: true },
+          })
+        : [];
+
+      if (targetEntries.length > 0) {
+        await tx.mealPlanEntry.updateMany({
+          where: { id: { in: targetEntries.map((entry) => entry.id) } },
+          data: { dayOfWeek: action.sourceDay },
+        });
       }
-      await tx.mealPlanEntry.update({ where: { id: sourceEntry.id }, data: { dayOfWeek: action.targetDay } });
+      await tx.mealPlanEntry.updateMany({
+        where: { id: { in: sourceEntries.map((entry) => entry.id) } },
+        data: { dayOfWeek: action.targetDay },
+      });
     });
   } catch (error) {
     if (error instanceof Error && error.message === "ENTRY_NOT_FOUND") {
