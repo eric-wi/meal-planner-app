@@ -62,9 +62,12 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ planId
         });
 
         if (target) {
-          await tx.mealPlanEntry.update({ where: { id: target.id }, data: { dayOfWeek: entry.dayOfWeek } });
+          await tx.mealPlanEntry.update({ where: { id: target.id }, data: { dayOfWeek: 0 } });
         }
         await tx.mealPlanEntry.update({ where: { id: entry.id }, data: { dayOfWeek: targetDay } });
+        if (target) {
+          await tx.mealPlanEntry.update({ where: { id: target.id }, data: { dayOfWeek: entry.dayOfWeek } });
+        }
         return;
       }
 
@@ -118,9 +121,12 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ planId
       });
 
       if (targetEntry) {
-        await tx.mealPlanEntry.update({ where: { id: targetEntry.id }, data: { dayOfWeek: action.sourceDay } });
+        await tx.mealPlanEntry.update({ where: { id: targetEntry.id }, data: { dayOfWeek: 0 } });
       }
       await tx.mealPlanEntry.update({ where: { id: sourceEntry.id }, data: { dayOfWeek: action.targetDay } });
+      if (targetEntry) {
+        await tx.mealPlanEntry.update({ where: { id: targetEntry.id }, data: { dayOfWeek: action.sourceDay } });
+      }
     });
   } catch (error) {
     if (error instanceof Error && error.message === "ENTRY_NOT_FOUND") {

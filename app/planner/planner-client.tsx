@@ -99,8 +99,10 @@ export function PlannerClient({
     link.download = "meal-plan-export.json";
     document.body.appendChild(link);
     link.click();
-    link.remove();
-    URL.revokeObjectURL(href);
+    setTimeout(() => {
+      link.remove();
+      URL.revokeObjectURL(href);
+    }, 0);
   }
 
   return (
