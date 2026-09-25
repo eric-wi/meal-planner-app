@@ -96,11 +96,12 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ planId
       }
 
       if (action.action === "swap") {
-        const [entry, recipe] = await Promise.all([
-          tx.mealPlanEntry.findFirst({ where: { id: action.entryId, mealPlanId: planId } }),
-          tx.recipe.findFirst({ where: { id: action.recipeId, status: RecipeStatus.PUBLISHED }, select: { id: true } }),
-        ]);
+        const entry = await tx.mealPlanEntry.findFirst({ where: { id: action.entryId, mealPlanId: planId } });
         if (!entry) throw new Error("ENTRY_NOT_FOUND");
+        const recipe = await tx.recipe.findFirst({
+          where: { id: action.recipeId, status: RecipeStatus.PUBLISHED, mealType: entry.mealType },
+          select: { id: true },
+        });
         if (!recipe) throw new Error("RECIPE_NOT_FOUND");
         await tx.mealPlanEntry.update({ where: { id: entry.id }, data: { recipeId: recipe.id } });
         return;

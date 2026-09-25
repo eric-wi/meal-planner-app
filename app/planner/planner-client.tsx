@@ -1,32 +1,14 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import {
+  buildPlannerExportPayload,
+  type PlannerExportEntry as PlannerEntry,
+  type PlannerExportGroceryItem as GroceryItem,
+  type PlannerExportSuggestion as Suggestion,
+} from "./planner-export";
 
 type MealType = "BREAKFAST" | "LUNCH" | "DINNER";
-
-type PlannerEntry = {
-  id: string;
-  recipeId: string;
-  dayOfWeek: number;
-  mealType: MealType;
-  orderIndex: number;
-  servings: number;
-  recipe: { title: string };
-};
-
-type Suggestion = {
-  id: string;
-  title: string;
-  cuisine: string;
-  totalMinutes: number;
-};
-
-type GroceryItem = {
-  name: string;
-  quantity: number;
-  unit: string;
-  category: string;
-};
 
 type RecipeOption = {
   id: string;
@@ -105,12 +87,11 @@ export function PlannerClient({
   }
 
   function onExport() {
-    const payload = {
-      exportedAt: new Date().toISOString(),
+    const payload = buildPlannerExportPayload({
       entries: sortedEntries,
       suggestions,
       groceries,
-    };
+    });
     const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
     const href = URL.createObjectURL(blob);
     const link = document.createElement("a");
@@ -127,7 +108,7 @@ export function PlannerClient({
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-3xl font-semibold">Weekly planner</h1>
-          <p className="text-sm text-zinc-600">Drag dinner cards between days or use controls to persist updates.</p>
+          <p className="text-sm text-zinc-600">Use move controls for keyboard-friendly changes. Drag-and-drop also persists dinner swaps.</p>
         </div>
         <div className="flex gap-2 text-sm">
           <button onClick={() => window.print()} className="rounded border px-3 py-2">Print</button>
